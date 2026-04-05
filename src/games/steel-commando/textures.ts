@@ -11,7 +11,7 @@ import {
 
 // ─── Draw helpers ─────────────────────────────────────────────────────────────
 
-function drawPlayerFrame(g: Phaser.GameObjects.Graphics, frame: number, _crouch: boolean) {
+function drawPlayerFrame(g: Phaser.GameObjects.Graphics, frame: number) {
   // Body
   g.fillStyle(0x4a88cc, 1);
   g.fillRect(8, 16, 16, 20);
@@ -192,18 +192,18 @@ export function preloadTextures(scene: Phaser.Scene) {
   // Player run frames (32×48)
   for (let f = 0; f < 4; f++) {
     g.clear();
-    drawPlayerFrame(g, f, false);
+    drawPlayerFrame(g, f);
     g.generateTexture(`sc-player-run-${f}`, PLAYER_W, PLAYER_H);
   }
 
   // Player idle
   g.clear();
-  drawPlayerFrame(g, 0, false);
+  drawPlayerFrame(g, 0);
   g.generateTexture("sc-player-idle", PLAYER_W, PLAYER_H);
 
   // Player jump
   g.clear();
-  drawPlayerFrame(g, 1, false);
+  drawPlayerFrame(g, 1);
   g.generateTexture("sc-player-jump", PLAYER_W, PLAYER_H);
 
   // Player crouch
