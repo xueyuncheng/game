@@ -101,22 +101,25 @@ function drawPlayerFrame(g: Phaser.GameObjects.Graphics, frame: number) {
 }
 
 function drawPlayerCrouch(g: Phaser.GameObjects.Graphics) {
-  // Body (squashed)
-  g.fillStyle(0x4a88cc, 1);
-  g.fillRect(8, 10, 16, 14);
-  // Head
-  g.fillStyle(0xf8c89a, 1);
-  g.fillRect(10, 2, 12, 10);
-  // Helmet
-  g.fillStyle(0x3a6aaa, 1);
-  g.fillRect(9, 0, 14, 6);
-  // Legs (crouched)
+  // Prone pose facing right.
   g.fillStyle(0x3a5a8a, 1);
-  g.fillRect(6, 22, 8, 8);
-  g.fillRect(18, 22, 8, 8);
-  // Gun
+  g.fillRect(3, 36, 9, 6);
+  g.fillRect(10, 38, 8, 5);
+
+  g.fillStyle(0x4a88cc, 1);
+  g.fillRect(9, 28, 14, 10);
+  g.fillRect(20, 30, 6, 5);
+
+  g.fillStyle(0xf8c89a, 1);
+  g.fillRect(4, 26, 8, 7);
+  g.fillRect(18, 32, 4, 3);
+
+  g.fillStyle(0x3a6aaa, 1);
+  g.fillRect(3, 24, 10, 4);
+
   g.fillStyle(0x2a2a2a, 1);
-  g.fillRect(22, 12, 10, 4);
+  g.fillRect(22, 29, 10, 3);
+  g.fillRect(29, 28, 3, 5);
 }
 
 function drawSoldierFrame(g: Phaser.GameObjects.Graphics, frame: number) {
@@ -407,11 +410,43 @@ function generateThemeTextures(
 // ─── Texture generation ───────────────────────────────────────────────────────
 
 export function preloadTextures(scene: Phaser.Scene) {
-  if (scene.textures.exists("sc-player-idle") && scene.textures.exists("sc-jungle-sky")) {
-    return;
+  const g = scene.add.graphics();
+  const removeTexture = (key: string) => {
+    if (scene.textures.exists(key)) {
+      scene.textures.remove(key);
+    }
+  };
+
+  for (const theme of ["jungle", "mountain", "fortress"] as const) {
+    removeTexture(`sc-${theme}-sky`);
+    removeTexture(`sc-${theme}-ground`);
+    removeTexture(`sc-${theme}-platform`);
+    removeTexture(`sc-${theme}-mountains`);
+    removeTexture(`sc-${theme}-buildings`);
   }
 
-  const g = scene.add.graphics();
+  for (let f = 0; f < 4; f++) {
+    removeTexture(`sc-player-run-${f}`);
+    removeTexture(`sc-soldier-walk-${f}`);
+    removeTexture(`sc-explosion-${f}`);
+  }
+
+  removeTexture("sc-player-idle");
+  removeTexture("sc-player-jump");
+  removeTexture("sc-player-crouch");
+  removeTexture("sc-player-dead");
+  removeTexture("sc-turret-base");
+  removeTexture("sc-turret-barrel");
+  removeTexture("sc-boss-1");
+  removeTexture("sc-boss-2");
+  removeTexture("sc-boss-3");
+  removeTexture("sc-bullet-player");
+  removeTexture("sc-bullet-spread");
+  removeTexture("sc-bullet-laser");
+  removeTexture("sc-bullet-enemy");
+  removeTexture("sc-pickup-spread");
+  removeTexture("sc-pickup-laser");
+  removeTexture("sc-life-icon");
 
   generateThemeTextures(g, "jungle", THEME_PALETTES.jungle);
   generateThemeTextures(g, "mountain", THEME_PALETTES.mountain);
@@ -437,7 +472,7 @@ export function preloadTextures(scene: Phaser.Scene) {
   // Player crouch
   g.clear();
   drawPlayerCrouch(g);
-  g.generateTexture("sc-player-crouch", PLAYER_W, 32);
+  g.generateTexture("sc-player-crouch", PLAYER_W, PLAYER_H);
 
   // Player death
   g.clear();
