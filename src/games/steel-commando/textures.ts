@@ -9,6 +9,72 @@ import {
   SOLDIER_H,
 } from "@/games/steel-commando/config";
 
+type ThemeKey = "jungle" | "mountain" | "fortress";
+
+type ThemePalette = {
+  skyTop: number;
+  skyBottom: number;
+  farColor: number;
+  farAccent: number;
+  midColor: number;
+  midAccent: number;
+  groundBase: number;
+  groundTop: number;
+  groundLine: number;
+  groundShadow: number;
+  platformBase: number;
+  platformTop: number;
+  platformAccent: number;
+};
+
+const THEME_PALETTES: Record<ThemeKey, ThemePalette> = {
+  jungle: {
+    skyTop: 0x0d2430,
+    skyBottom: 0x2d5f63,
+    farColor: 0x193746,
+    farAccent: 0x24524d,
+    midColor: 0x173d27,
+    midAccent: 0x4c7f46,
+    groundBase: 0x364728,
+    groundTop: 0x5a7b3c,
+    groundLine: 0x9ec86a,
+    groundShadow: 0x202c17,
+    platformBase: 0x5d4b2d,
+    platformTop: 0x90723e,
+    platformAccent: 0xcaa66b,
+  },
+  mountain: {
+    skyTop: 0x30284c,
+    skyBottom: 0x885763,
+    farColor: 0x2c3254,
+    farAccent: 0x6f7ea7,
+    midColor: 0x485266,
+    midAccent: 0x9dabc2,
+    groundBase: 0x55515b,
+    groundTop: 0x908979,
+    groundLine: 0xd3c7b0,
+    groundShadow: 0x2a2f36,
+    platformBase: 0x6c6057,
+    platformTop: 0xb59d77,
+    platformAccent: 0xe6d5ae,
+  },
+  fortress: {
+    skyTop: 0x120d1f,
+    skyBottom: 0x431d26,
+    farColor: 0x24192b,
+    farAccent: 0x642331,
+    midColor: 0x303544,
+    midAccent: 0xd86e4b,
+    groundBase: 0x313640,
+    groundTop: 0x5e6672,
+    groundLine: 0xaeb8c6,
+    groundShadow: 0x1a1d24,
+    platformBase: 0x474d58,
+    platformTop: 0x7f8895,
+    platformAccent: 0xdce3ee,
+  },
+};
+
 // ─── Draw helpers ─────────────────────────────────────────────────────────────
 
 function drawPlayerFrame(g: Phaser.GameObjects.Graphics, frame: number) {
@@ -125,69 +191,231 @@ function drawExplosionFrame(g: Phaser.GameObjects.Graphics, frame: number) {
   }
 }
 
-// ─── Texture generation ───────────────────────────────────────────────────────
-
-export function preloadTextures(scene: Phaser.Scene) {
-  const g = scene.add.graphics();
-
-  // Sky background
+function drawSkyTexture(g: Phaser.GameObjects.Graphics, theme: ThemeKey, palette: ThemePalette) {
   g.clear();
-  g.fillGradientStyle(0x0a1628, 0x0a1628, 0x1a2f4a, 0x1a2f4a, 1);
+  g.fillGradientStyle(palette.skyTop, palette.skyTop, palette.skyBottom, palette.skyBottom, 1);
   g.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-  g.generateTexture("sc-sky", GAME_WIDTH, GAME_HEIGHT);
 
-  // Ground tile (64×64)
-  g.clear();
-  g.fillStyle(0x3a4a2a, 1);
-  g.fillRect(0, 0, 64, 64);
-  g.fillStyle(0x4a5a32, 1);
-  g.fillRect(0, 0, 64, 8);
-  g.lineStyle(1, 0x5a6e3a, 0.5);
-  g.lineBetween(0, 8, 64, 8);
-  g.lineStyle(1, 0x2a3820, 0.3);
-  g.lineBetween(32, 8, 32, 64);
-  g.generateTexture("sc-ground", 64, 64);
-
-  // Platform tile
-  g.clear();
-  g.fillStyle(0x5c4a2a, 1);
-  g.fillRect(0, 0, 64, PLATFORM_H);
-  g.fillStyle(0x7a6235, 1);
-  g.fillRect(0, 0, 64, 4);
-  g.lineStyle(1, 0x9a7a44, 0.4);
-  g.lineBetween(0, 4, 64, 4);
-  g.generateTexture("sc-platform", 64, PLATFORM_H);
-
-  // Mountain silhouette for bg parallax
-  g.clear();
-  g.fillStyle(0x0e1f36, 1);
-  for (let i = 0; i < 12; i++) {
-    const mx = i * 100 + 40;
-    const mh = 80 + (i * 37) % 70;
-    g.fillTriangle(mx - 60, 260, mx + 60, 260, mx, 260 - mh);
+  if (theme === "jungle") {
+    g.fillStyle(0xf7d37a, 0.35);
+    g.fillCircle(160, 120, 48);
+    g.fillStyle(0xb8ffeb, 0.08);
+    g.fillRect(0, 340, GAME_WIDTH, 42);
+    g.fillRect(0, 410, GAME_WIDTH, 26);
+  } else if (theme === "mountain") {
+    g.fillStyle(0xffc47b, 0.4);
+    g.fillCircle(760, 116, 56);
+    g.fillStyle(0xffffff, 0.08);
+    g.fillEllipse(180, 150, 170, 36);
+    g.fillEllipse(420, 118, 120, 28);
+    g.fillEllipse(700, 176, 180, 34);
+  } else {
+    g.fillStyle(0xff6a4d, 0.18);
+    g.fillCircle(770, 120, 42);
+    g.fillStyle(0xffffff, 0.5);
+    for (let i = 0; i < 18; i++) {
+      const x = 60 + ((i * 47) % (GAME_WIDTH - 120));
+      const y = 40 + ((i * 29) % 180);
+      g.fillRect(x, y, 2, 2);
+    }
   }
-  g.generateTexture("sc-mountains", GAME_WIDTH, 260);
+}
 
-  // Building silhouette
+function drawMountainTexture(g: Phaser.GameObjects.Graphics, theme: ThemeKey, palette: ThemePalette) {
   g.clear();
-  g.fillStyle(0x0d1a2e, 1);
+  g.fillStyle(palette.farColor, 1);
+
+  if (theme === "jungle") {
+    for (let i = 0; i < 7; i++) {
+      const cx = i * 150 + 70;
+      const w = 260 + (i % 2) * 40;
+      const h = 70 + (i % 3) * 18;
+      g.fillEllipse(cx, 260, w, h);
+    }
+    g.fillStyle(palette.farAccent, 0.85);
+    for (let i = 0; i < 5; i++) {
+      const mx = i * 180 + 120;
+      const mh = 60 + (i % 2) * 24;
+      g.fillTriangle(mx - 40, 250, mx + 40, 250, mx, 250 - mh);
+    }
+  } else if (theme === "mountain") {
+    for (let i = 0; i < 11; i++) {
+      const mx = i * 96 + 40;
+      const mh = 90 + (i * 37) % 90;
+      g.fillTriangle(mx - 58, 260, mx + 58, 260, mx, 260 - mh);
+    }
+    g.fillStyle(palette.farAccent, 0.5);
+    for (let i = 0; i < 5; i++) {
+      const rx = i * 210 + 90;
+      g.fillTriangle(rx - 40, 240, rx + 16, 240, rx - 6, 170);
+    }
+  } else {
+    for (let i = 0; i < 9; i++) {
+      const bx = i * 112;
+      const bw = 92 + (i % 3) * 18;
+      const bh = 88 + (i % 4) * 22;
+      g.fillRect(bx, 260 - bh, bw, bh);
+      g.fillTriangle(bx + bw - 16, 260 - bh, bx + bw + 12, 260 - bh, bx + bw - 2, 260 - bh - 28);
+    }
+    g.fillStyle(palette.farAccent, 0.55);
+    for (let i = 0; i < 4; i++) {
+      const sx = i * 230 + 90;
+      g.fillRect(sx, 120, 12, 140);
+      g.fillRect(sx + 14, 150, 8, 110);
+    }
+  }
+}
+
+function drawBuildingTexture(g: Phaser.GameObjects.Graphics, theme: ThemeKey, palette: ThemePalette) {
+  g.clear();
+
+  if (theme === "jungle") {
+    g.fillStyle(palette.midColor, 1);
+    for (let i = 0; i < 10; i++) {
+      const tx = i * 105 + 24;
+      const trunkH = 100 + (i % 3) * 34;
+      g.fillRect(tx, 220 - trunkH, 18, trunkH);
+      g.fillStyle(palette.midAccent, 0.9);
+      g.fillCircle(tx + 9, 220 - trunkH + 14, 30 + (i % 2) * 8);
+      g.fillCircle(tx - 10, 220 - trunkH + 28, 24);
+      g.fillCircle(tx + 26, 220 - trunkH + 32, 26);
+      g.fillStyle(palette.midColor, 1);
+    }
+
+    for (let i = 0; i < 4; i++) {
+      const ox = i * 230 + 80;
+      g.fillRect(ox, 160, 54, 60);
+      g.fillStyle(0x6f5a33, 1);
+      g.fillRect(ox + 8, 168, 38, 10);
+      g.fillStyle(palette.midColor, 1);
+    }
+    return;
+  }
+
+  if (theme === "mountain") {
+    g.fillStyle(palette.midColor, 1);
+    for (let i = 0; i < 6; i++) {
+      const cx = i * 165;
+      g.fillTriangle(cx - 20, 220, cx + 120, 220, cx + 36, 120 + (i % 2) * 24);
+    }
+    g.fillStyle(palette.midAccent, 0.7);
+    for (let i = 0; i < 5; i++) {
+      const px = i * 190 + 50;
+      g.fillRect(px, 120, 8, 100);
+      g.fillRect(px + 42, 140, 8, 80);
+      g.lineStyle(2, palette.midAccent, 0.6);
+      g.lineBetween(px + 4, 130, px + 46, 150);
+      g.lineBetween(px + 4, 150, px + 46, 170);
+    }
+    return;
+  }
+
+  g.fillStyle(palette.midColor, 1);
   for (let i = 0; i < 8; i++) {
-    const bx = i * 140 + 20;
-    const bw = 60 + (i * 23) % 40;
-    const bh = 100 + (i * 43) % 80;
+    const bx = i * 128;
+    const bw = 78 + (i % 2) * 18;
+    const bh = 110 + (i % 3) * 26;
     g.fillRect(bx, 220 - bh, bw, bh);
-    // windows
-    g.fillStyle(0x2a4a6a, 0.6);
+    g.fillRect(bx + bw - 18, 220 - bh - 26, 16, 26);
+    g.fillStyle(palette.midAccent, 0.75);
     for (let wy = 0; wy < 4; wy++) {
       for (let wx = 0; wx < 3; wx++) {
-        if ((wy + wx + i) % 3 !== 0) {
-          g.fillRect(bx + 8 + wx * 18, 220 - bh + 10 + wy * 22, 10, 14);
+        if ((wx + wy + i) % 2 === 0) {
+          g.fillRect(bx + 10 + wx * 18, 220 - bh + 12 + wy * 20, 10, 8);
         }
       }
     }
-    g.fillStyle(0x0d1a2e, 1);
+    g.fillStyle(palette.midColor, 1);
   }
-  g.generateTexture("sc-buildings", GAME_WIDTH, 220);
+}
+
+function drawGroundTexture(g: Phaser.GameObjects.Graphics, theme: ThemeKey, palette: ThemePalette) {
+  g.clear();
+  g.fillStyle(palette.groundBase, 1);
+  g.fillRect(0, 0, 64, 64);
+  g.fillStyle(palette.groundTop, 1);
+  g.fillRect(0, 0, 64, 8);
+  g.lineStyle(1, palette.groundLine, 0.5);
+  g.lineBetween(0, 8, 64, 8);
+  g.lineStyle(1, palette.groundShadow, 0.4);
+
+  if (theme === "jungle") {
+    g.lineBetween(16, 8, 10, 64);
+    g.lineBetween(36, 8, 42, 64);
+    g.lineBetween(54, 8, 50, 64);
+  } else if (theme === "mountain") {
+    g.lineBetween(18, 8, 12, 36);
+    g.lineBetween(20, 34, 10, 64);
+    g.lineBetween(44, 8, 54, 40);
+    g.lineBetween(50, 38, 42, 64);
+  } else {
+    g.lineBetween(16, 8, 16, 64);
+    g.lineBetween(32, 8, 32, 64);
+    g.lineBetween(48, 8, 48, 64);
+    g.lineBetween(0, 32, 64, 32);
+  }
+}
+
+function drawPlatformTexture(g: Phaser.GameObjects.Graphics, theme: ThemeKey, palette: ThemePalette) {
+  g.clear();
+  g.fillStyle(palette.platformBase, 1);
+  g.fillRect(0, 0, 64, PLATFORM_H);
+  g.fillStyle(palette.platformTop, 1);
+  g.fillRect(0, 0, 64, 4);
+  g.lineStyle(1, palette.platformAccent, 0.5);
+  g.lineBetween(0, 4, 64, 4);
+
+  if (theme === "jungle") {
+    g.lineStyle(1, 0x3c2e1b, 0.35);
+    g.lineBetween(18, 0, 18, PLATFORM_H);
+    g.lineBetween(39, 0, 39, PLATFORM_H);
+    g.lineBetween(51, 0, 51, PLATFORM_H);
+  } else if (theme === "mountain") {
+    g.lineStyle(1, 0x4f4b46, 0.35);
+    g.lineBetween(10, PLATFORM_H - 2, 22, 6);
+    g.lineBetween(26, PLATFORM_H - 3, 38, 5);
+    g.lineBetween(44, PLATFORM_H - 2, 56, 7);
+  } else {
+    g.lineStyle(1, 0x252932, 0.45);
+    g.lineBetween(16, 0, 16, PLATFORM_H);
+    g.lineBetween(32, 0, 32, PLATFORM_H);
+    g.lineBetween(48, 0, 48, PLATFORM_H);
+  }
+}
+
+function generateThemeTextures(
+  g: Phaser.GameObjects.Graphics,
+  theme: ThemeKey,
+  palette: ThemePalette,
+) {
+  drawSkyTexture(g, theme, palette);
+  g.generateTexture(`sc-${theme}-sky`, GAME_WIDTH, GAME_HEIGHT);
+
+  drawGroundTexture(g, theme, palette);
+  g.generateTexture(`sc-${theme}-ground`, 64, 64);
+
+  drawPlatformTexture(g, theme, palette);
+  g.generateTexture(`sc-${theme}-platform`, 64, PLATFORM_H);
+
+  drawMountainTexture(g, theme, palette);
+  g.generateTexture(`sc-${theme}-mountains`, GAME_WIDTH, 260);
+
+  drawBuildingTexture(g, theme, palette);
+  g.generateTexture(`sc-${theme}-buildings`, GAME_WIDTH, 220);
+}
+
+// ─── Texture generation ───────────────────────────────────────────────────────
+
+export function preloadTextures(scene: Phaser.Scene) {
+  if (scene.textures.exists("sc-player-idle") && scene.textures.exists("sc-jungle-sky")) {
+    return;
+  }
+
+  const g = scene.add.graphics();
+
+  generateThemeTextures(g, "jungle", THEME_PALETTES.jungle);
+  generateThemeTextures(g, "mountain", THEME_PALETTES.mountain);
+  generateThemeTextures(g, "fortress", THEME_PALETTES.fortress);
 
   // Player run frames (32×48)
   for (let f = 0; f < 4; f++) {
