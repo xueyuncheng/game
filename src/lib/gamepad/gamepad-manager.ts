@@ -19,8 +19,8 @@ function axisPositive(value: number | undefined) {
 function mapGamepad(gamepad: Gamepad): InputSnapshot {
   const horizontal = gamepad.axes[0] ?? 0;
   const vertical = gamepad.axes[1] ?? 0;
-  const useHorizontalAxis = Math.abs(horizontal) > DEADZONE && Math.abs(horizontal) >= Math.abs(vertical);
-  const useVerticalAxis = Math.abs(vertical) > DEADZONE && Math.abs(vertical) > Math.abs(horizontal);
+  const useHorizontalAxis = Math.abs(horizontal) > DEADZONE;
+  const useVerticalAxis = Math.abs(vertical) > DEADZONE;
 
   return {
     moveUp: pressed(gamepad.buttons[12]) || (useVerticalAxis && axisNegative(vertical)),

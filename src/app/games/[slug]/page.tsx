@@ -77,7 +77,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
         <div className="space-y-6">
           <GamepadStatus />
-          <ControlHint />
+          <ControlHint slug={game.slug} />
         </div>
       </section>
     </GameShell>

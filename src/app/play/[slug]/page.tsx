@@ -42,7 +42,7 @@ export default async function PlayPage({ params }: PlayPageProps) {
           <GameCanvas slug={game.slug} />
           <div className="space-y-6">
             <GamepadStatus />
-            <ControlHint />
+            <ControlHint slug={game.slug} />
           </div>
         </div>
       </section>

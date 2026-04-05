@@ -492,7 +492,7 @@ export class SteelCommandoScene extends Phaser.Scene {
 
     // Controls hint
     this.add
-      .text(GAME_WIDTH / 2, 12, "← → Move  Z Jump  X Shoot  ↑ AimUp  ↓ Crouch  P Pause  R Restart", {
+      .text(GAME_WIDTH / 2, 12, "← → Move  Z Jump  X/Space Shoot  ↑ ↓ Aim  P Pause  R Restart", {
         fontFamily: "Arial",
         fontSize: "11px",
         color: "#8899bb",
@@ -553,7 +553,7 @@ export class SteelCommandoScene extends Phaser.Scene {
 
     if (this.dead) return;
 
-    const input = this.gatherInput(time);
+    const input = this.gatherInput();
     this.updatePlayer(time, input);
     this.checkEnemyBulletsHitPlayer();
     this.updateSpikeTraps(time);
@@ -579,36 +579,29 @@ export class SteelCommandoScene extends Phaser.Scene {
 
   // ─── Input gathering ─────────────────────────────────────────────────────────
 
-  private gatherInput(time: number) {
+  private gatherInput() {
     const kb = this.cursors;
     const gp = gamepadManager.poll();
 
     const moveLeft = Boolean(kb.left.isDown);
     const moveRight = Boolean(kb.right.isDown);
     const aimUpKb = Boolean(kb.up.isDown);
-    const crouchKb = Boolean(kb.down.isDown || this.crouchKey.isDown);
-    const jumpJustDown =
-      Phaser.Input.Keyboard.JustDown(this.jumpKey) ||
-      Phaser.Input.Keyboard.JustDown(kb.up) ||
-      (gp.altShoot && !this.prevGpJump);
+    const aimDownKb = Boolean(kb.down.isDown || this.crouchKey.isDown);
+    const jumpJustDown = Phaser.Input.Keyboard.JustDown(this.jumpKey) || (gp.altShoot && !this.prevGpJump);
     const shootDown =
       Boolean(this.shootKey.isDown) ||
       Boolean(this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.CTRL).isDown) ||
       Boolean(kb.space?.isDown) ||
       gp.shoot;
-    const shootJustDown = shootDown && !this.prevGpShoot;
 
     this.prevGpJump = gp.altShoot;
     this.prevGpShoot = gp.shoot;
 
-    void time;
-    void shootJustDown;
-
     return {
       left: moveLeft || gp.moveLeft,
       right: moveRight || gp.moveRight,
-      aimUp: aimUpKb || gp.moveUp,
-      crouch: crouchKb || gp.moveDown,
+      up: aimUpKb || gp.moveUp,
+      down: aimDownKb || gp.moveDown,
       jumpJustDown,
       shootDown,
     };
@@ -619,10 +612,10 @@ export class SteelCommandoScene extends Phaser.Scene {
   private updatePlayer(time: number, input: ReturnType<typeof this.gatherInput>) {
     const body = this.player.body;
     this.isOnGround = body.blocked.down;
-    this.aimUp = input.aimUp && !input.crouch;
+    this.aimUp = input.up && !input.down;
 
     // Crouch (only on ground)
-    const wantCrouch = input.crouch && this.isOnGround;
+    const wantCrouch = input.down && this.isOnGround;
     if (wantCrouch !== this.isCrouching) {
       this.isCrouching = wantCrouch;
       if (this.isCrouching) {
@@ -634,14 +627,16 @@ export class SteelCommandoScene extends Phaser.Scene {
       }
     }
 
+    if (input.left !== input.right) {
+      this.facingRight = input.right;
+    }
+
     // Horizontal movement (no movement while crouching)
     if (!this.isCrouching) {
-      if (input.left) {
+      if (input.left && !input.right) {
         this.player.setVelocityX(-PLAYER_SPEED);
-        this.facingRight = false;
-      } else if (input.right) {
+      } else if (input.right && !input.left) {
         this.player.setVelocityX(PLAYER_SPEED);
-        this.facingRight = true;
       } else {
         this.player.setVelocityX(0);
       }
@@ -672,7 +667,7 @@ export class SteelCommandoScene extends Phaser.Scene {
     // Shoot
     if (input.shootDown && time - this.lastShotAt > SHOOT_COOLDOWN_MS) {
       this.lastShotAt = time;
-      this.doPlayerShoot();
+      this.doPlayerShoot(input);
     }
 
     // Invincibility blink
@@ -685,28 +680,32 @@ export class SteelCommandoScene extends Phaser.Scene {
 
   // ─── Player shoot ────────────────────────────────────────────────────────────
 
-  private doPlayerShoot() {
-    const x = this.player.x + (this.facingRight ? 18 : -18);
-    const baseVX = this.facingRight ? BULLET_SPEED : -BULLET_SPEED;
-    const baseVY = this.aimUp ? -BULLET_SPEED : 0;
+  private doPlayerShoot(input: ReturnType<typeof this.gatherInput>) {
+    const aimX = input.left === input.right ? 0 : input.left ? -1 : 1;
+    const aimY = input.up === input.down ? 0 : input.up ? -1 : 1;
+    const direction = new Phaser.Math.Vector2(aimX, aimY);
 
-    // Normalize diagonal
-    if (baseVX !== 0 && baseVY !== 0) {
-      const len = Math.hypot(baseVX, baseVY);
-      this.spawnBullet(x, this.player.y, (baseVX / len) * BULLET_SPEED, (baseVY / len) * BULLET_SPEED);
-    } else if (this.weapon === "spread") {
+    if (direction.lengthSq() === 0) {
+      direction.set(this.facingRight ? 1 : -1, 0);
+    } else {
+      direction.normalize();
+    }
+
+    const x = this.player.x + direction.x * 18;
+    const y = this.player.y + direction.y * 18;
+
+    if (this.weapon === "spread") {
       // 3-way spread
       const angles = [-0.3, 0, 0.3];
       for (const a of angles) {
-        const vx = Math.cos(a) * (this.facingRight ? BULLET_SPEED : -BULLET_SPEED);
-        const vy = Math.sin(a) * BULLET_SPEED * (this.facingRight ? 1 : -1);
-        this.spawnBullet(x, this.player.y, vx, vy);
+        const velocity = direction.clone().rotate(a).scale(BULLET_SPEED);
+        this.spawnBullet(x, y, velocity.x, velocity.y);
       }
     } else if (this.weapon === "laser") {
-      // Fast straight laser
-      this.spawnBullet(x, this.player.y, baseVX * 1.4, 0, "sc-bullet-laser");
+      // Fast laser in the aimed direction.
+      this.spawnBullet(x, y, direction.x * BULLET_SPEED * 1.4, direction.y * BULLET_SPEED * 1.4, "sc-bullet-laser");
     } else {
-      this.spawnBullet(x, this.player.y, baseVX, baseVY);
+      this.spawnBullet(x, y, direction.x * BULLET_SPEED, direction.y * BULLET_SPEED);
     }
 
     gamepadManager.vibrate(30, 0.1, 0.3);
@@ -721,8 +720,8 @@ export class SteelCommandoScene extends Phaser.Scene {
     b.setVelocity(vx, vy);
     b.body.allowGravity = false;
 
-    // Rotate to match velocity direction
-    if (vy !== 0) {
+    // Rotate to match velocity direction.
+    if (vx !== 0 || vy !== 0) {
       b.setRotation(Math.atan2(vy, vx) - Math.PI / 2);
     }
   }
@@ -1123,10 +1122,6 @@ export class SteelCommandoScene extends Phaser.Scene {
       }
       return true;
     });
-  }
-
-  private onEnemyBulletHitPlayer(_bulletObj: ArcadeTarget, _playerObj: ArcadeTarget) {
-    // Replaced by checkEnemyBulletsHitPlayer() — kept as no-op to avoid TS errors
   }
 
   private onPickup(playerObj: ArcadeTarget, pickupObj: ArcadeTarget) {
