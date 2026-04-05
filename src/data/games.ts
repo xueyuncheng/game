@@ -28,15 +28,15 @@ export const games: GameSummary[] = [
   {
     slug: "steel-commando",
     name: "Steel Commando",
-    tagline: "横版突击射击，作为第二个核心项目推进。",
+    tagline: "横版突击射击，魂斗罗风格关卡闯关。",
     genre: "Run & Gun",
-    players: "1P planned",
-    status: "prototype",
+    players: "1P",
+    status: "playable",
     controller: true,
     accent: "from-fuchsia-500 via-rose-400 to-amber-300",
     description:
-      "面向类魂斗罗玩法的预研位，后续会接入跳跃、方向射击、敌兵与 Boss 模块。",
-    features: ["手柄预留", "关卡模块化", "武器系统规划", "Boss 战规划"],
+      "横版跑轰射击游戏：奔跑、跳跃、瞄准八方向开火，穿越士兵与炮台的防线，最终击败机甲指挥官 Boss。",
+    features: ["三种武器", "士兵与炮台", "三阶段 Boss", "手柄支持"],
   },
 ];
 
