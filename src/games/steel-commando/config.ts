@@ -37,6 +37,7 @@ export const SOLDIER_ACTIVATE_DIST = 600; // pixels from camera right edge
 
 // Turrets
 export const TURRET_HP = 5;
+export const SNIPER_NEST_HP = 3;
 export const TURRET_SHOOT_INTERVAL = 1400;
 export const TURRET_ACTIVATE_DIST = 500;
 
