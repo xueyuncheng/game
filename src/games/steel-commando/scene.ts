@@ -648,8 +648,8 @@ export class SteelCommandoScene extends Phaser.Scene {
     if (wantCrouch !== this.isCrouching) {
       this.isCrouching = wantCrouch;
       if (this.isCrouching) {
-        this.player.body.setSize(20, 28);
-        this.player.body.setOffset(6, 20);
+        this.player.body.setSize(28, 18);
+        this.player.body.setOffset(2, 30);
       } else {
         this.player.body.setSize(20, 44);
         this.player.body.setOffset(6, 4);
@@ -716,8 +716,9 @@ export class SteelCommandoScene extends Phaser.Scene {
   // ─── Player shoot ────────────────────────────────────────────────────────────
 
   private doPlayerShoot(input: ReturnType<typeof this.gatherInput>) {
-    const aimX = input.left === input.right ? 0 : input.left ? -1 : 1;
-    const aimY = input.up === input.down ? 0 : input.up ? -1 : 1;
+    const crouchShot = this.isCrouching && !input.up;
+    const aimX = crouchShot ? 0 : input.left === input.right ? 0 : input.left ? -1 : 1;
+    const aimY = crouchShot ? 0 : input.up === input.down ? 0 : input.up ? -1 : 1;
     const direction = new Phaser.Math.Vector2(aimX, aimY);
 
     if (direction.lengthSq() === 0) {
@@ -726,12 +727,13 @@ export class SteelCommandoScene extends Phaser.Scene {
       direction.normalize();
     }
 
+    const muzzleY = this.isCrouching ? this.player.y + 2 : this.player.y;
     const x = this.player.x + direction.x * 18;
-    const y = this.player.y + direction.y * 18;
+    const y = muzzleY + direction.y * 18;
 
     if (this.weapon === "spread") {
-      // 3-way spread
-      const angles = [-0.3, 0, 0.3];
+      // 7-way spread with one center shot.
+      const angles = [-0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45];
       for (const a of angles) {
         const velocity = direction.clone().rotate(a).scale(BULLET_SPEED);
         this.spawnBullet(x, y, velocity.x, velocity.y);
