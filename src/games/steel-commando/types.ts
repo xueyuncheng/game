@@ -37,3 +37,40 @@ export type BossData = {
   hpLabel: Phaser.GameObjects.Text;
   defeated: boolean;
 };
+
+export type SpikeTrapEntry = {
+  x: number;
+  width: number;
+  cycleMs: number;
+  activeDurationMs: number;
+  active: boolean;
+  nextToggleAt: number;
+  glow: Phaser.GameObjects.Rectangle;
+  spikes: Phaser.GameObjects.Triangle[];
+};
+
+export type SniperNestEntry = {
+  x: number;
+  y: number;
+  cooldownMs: number;
+  activated: boolean;
+  nextShotAt: number;
+  fireAt: number;
+  targetX: number;
+  targetY: number;
+  warningLine: Phaser.GameObjects.Graphics;
+  warningReticle: Phaser.GameObjects.Arc;
+};
+
+export type LaserGateEntry = {
+  x: number;
+  topY: number;
+  height: number;
+  cycleMs: number;
+  activeDurationMs: number;
+  active: boolean;
+  nextToggleAt: number;
+  beam: Phaser.GameObjects.Rectangle;
+  topCore: Phaser.GameObjects.Arc;
+  bottomCore: Phaser.GameObjects.Arc;
+};

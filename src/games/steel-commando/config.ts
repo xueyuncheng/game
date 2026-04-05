@@ -42,10 +42,10 @@ export const TURRET_ACTIVATE_DIST = 500;
 // Boss
 export const BOSS_W = 80;
 export const BOSS_H = 80;
-export const BOSS_HP = 60;
-export const BOSS_SPEED_1 = 90;
-export const BOSS_SPEED_2 = 130;
-export const BOSS_SPEED_3 = 170;
+export const BOSS_HP = 40;
+export const BOSS_SPEED_1 = 180;
+export const BOSS_SPEED_2 = 220;
+export const BOSS_SPEED_3 = 270;
 export const BOSS_SHOOT_INTERVAL_1 = 1800;
 export const BOSS_SHOOT_INTERVAL_2 = 1200;
 export const BOSS_SHOOT_INTERVAL_3 = 800;
@@ -53,11 +53,13 @@ export const BOSS_X = 5200;
 
 // Platforms
 export const PLATFORM_H = 16;
+export const P0_Y = GROUND_TOP_Y - 40;  // low bunker / catwalk tier
 export const P1_Y = GROUND_TOP_Y - 80;  // lower platform tier
 export const P2_Y = GROUND_TOP_Y - 160; // upper platform tier
+export const P3_Y = GROUND_TOP_Y - 240; // high cliff / battlement tier
 
 // HUD
-export const MAX_LIVES = 3;
+export const MAX_LIVES = 100;
 export const SCORE_PER_SOLDIER = 100;
 export const SCORE_PER_TURRET = 300;
 export const SCORE_PER_BOSS = 2000;
