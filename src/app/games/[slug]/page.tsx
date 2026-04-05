@@ -3,11 +3,15 @@ import { notFound } from "next/navigation";
 import { ControlHint } from "@/components/control-hint";
 import { GameShell } from "@/components/game-shell";
 import { GamepadStatus } from "@/components/gamepad-status";
-import { getGameBySlug } from "@/data/games";
+import { games, getGameBySlug } from "@/data/games";
 
 type GameDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
+
+export function generateStaticParams() {
+  return games.map((game) => ({ slug: game.slug }));
+}
 
 export default async function GameDetailPage({ params }: GameDetailPageProps) {
   const { slug } = await params;

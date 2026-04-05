@@ -4,11 +4,15 @@ import { ControlHint } from "@/components/control-hint";
 import { GameCanvas } from "@/components/game-canvas";
 import { GameShell } from "@/components/game-shell";
 import { GamepadStatus } from "@/components/gamepad-status";
-import { getGameBySlug } from "@/data/games";
+import { games, getGameBySlug } from "@/data/games";
 
 type PlayPageProps = {
   params: Promise<{ slug: string }>;
 };
+
+export function generateStaticParams() {
+  return games.map((game) => ({ slug: game.slug }));
+}
 
 export default async function PlayPage({ params }: PlayPageProps) {
   const { slug } = await params;
