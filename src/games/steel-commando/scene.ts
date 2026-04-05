@@ -1,6 +1,7 @@
 import * as Phaser from "phaser";
 import { gamepadManager } from "@/lib/gamepad/gamepad-manager";
 import {
+  PLAYER_DOUBLE_JUMP_VEL,
   BOSS_SHOOT_INTERVAL_1,
   BOSS_SHOOT_INTERVAL_2,
   BOSS_SHOOT_INTERVAL_3,
@@ -42,6 +43,11 @@ import {
   type TurretEntry,
 } from "@/games/steel-commando/types";
 import { LEVEL_DEFS, type LevelDef } from "@/games/steel-commando/level-data";
+import {
+  clearSteelCommandoProgress,
+  loadSteelCommandoProgress,
+  saveSteelCommandoProgress,
+} from "@/games/steel-commando/progress";
 import { preloadTextures } from "@/games/steel-commando/textures";
 import { createAnimations } from "@/games/steel-commando/animations";
 
@@ -54,6 +60,7 @@ export class SteelCommandoScene extends Phaser.Scene {
   private aimUp = false;
   private isCrouching = false;
   private isOnGround = false;
+  private jumpsUsed = 0;
   private weapon: WeaponType = "pistol";
   private lastShotAt = 0;
   private invincibleUntil = 0;
@@ -115,14 +122,16 @@ export class SteelCommandoScene extends Phaser.Scene {
 
   create() {
     const data = (this.scene.settings.data as { level?: number; lives?: number; score?: number }) ?? {};
-    this.currentLevel = data.level ?? 1;
-    this.levelDef = LEVEL_DEFS[this.currentLevel - 1];
+    const savedProgress = loadSteelCommandoProgress();
+    const initialLevel = data.level ?? savedProgress?.level ?? 1;
 
     this.resetState();
+    this.currentLevel = initialLevel;
+    this.levelDef = LEVEL_DEFS[this.currentLevel - 1];
 
     // Carry over lives and score when advancing levels
-    if (data.lives !== undefined) this.lives = data.lives;
-    if (data.score !== undefined) this.score = data.score;
+    this.lives = data.lives ?? savedProgress?.lives ?? this.lives;
+    this.score = data.score ?? savedProgress?.score ?? this.score;
 
     this.physics.world.setBounds(0, 0, this.levelDef.worldWidth, GAME_HEIGHT);
     this.physics.world.gravity.y = 900;
@@ -139,6 +148,7 @@ export class SteelCommandoScene extends Phaser.Scene {
     this.setupInput();
     this.setupColliders();
     this.createHud();
+    this.saveProgress();
   }
 
   private resetState() {
@@ -146,6 +156,7 @@ export class SteelCommandoScene extends Phaser.Scene {
     this.aimUp = false;
     this.isCrouching = false;
     this.isOnGround = false;
+    this.jumpsUsed = 0;
     this.weapon = "pistol";
     this.lastShotAt = 0;
     this.invincibleUntil = 0;
@@ -492,7 +503,7 @@ export class SteelCommandoScene extends Phaser.Scene {
 
     // Controls hint
     this.add
-      .text(GAME_WIDTH / 2, 12, "← → Move  Z Jump  X/Space Shoot  ↑ ↓ Aim  P Pause  R Restart", {
+      .text(GAME_WIDTH / 2, 12, "← → Move  Z Double Jump  X/Space Shoot  ↑ ↓ Aim  P Pause  R Restart", {
         fontFamily: "Arial",
         fontSize: "11px",
         color: "#8899bb",
@@ -526,6 +537,15 @@ export class SteelCommandoScene extends Phaser.Scene {
   private updateScore(delta: number) {
     this.score += delta;
     this.scoreText.setText(`SCORE ${String(this.score).padStart(6, "0")}`);
+    this.saveProgress();
+  }
+
+  private saveProgress() {
+    saveSteelCommandoProgress({
+      level: this.currentLevel,
+      lives: this.lives,
+      score: this.score,
+    });
   }
 
   // ─── Update ──────────────────────────────────────────────────────────────────
@@ -612,6 +632,9 @@ export class SteelCommandoScene extends Phaser.Scene {
   private updatePlayer(time: number, input: ReturnType<typeof this.gatherInput>) {
     const body = this.player.body;
     this.isOnGround = body.blocked.down;
+    if (this.isOnGround) {
+      this.jumpsUsed = 0;
+    }
     this.aimUp = input.up && !input.down;
 
     // Crouch (only on ground)
@@ -645,9 +668,15 @@ export class SteelCommandoScene extends Phaser.Scene {
     }
 
     // Jump
-    if (input.jumpJustDown && this.isOnGround) {
-      this.player.setVelocityY(PLAYER_JUMP_VEL);
-      this.isOnGround = false;
+    if (input.jumpJustDown) {
+      if (this.isOnGround) {
+        this.player.setVelocityY(PLAYER_JUMP_VEL);
+        this.isOnGround = false;
+        this.jumpsUsed = 1;
+      } else if (this.jumpsUsed < 2) {
+        this.player.setVelocityY(PLAYER_DOUBLE_JUMP_VEL);
+        this.jumpsUsed = 2;
+      }
     }
 
     // Flip
@@ -734,6 +763,31 @@ export class SteelCommandoScene extends Phaser.Scene {
     b.setDepth(6);
     b.setVelocity(vx, vy);
     b.body.allowGravity = false;
+  }
+
+  private isTerrainBlockingShot(fromX: number, fromY: number, toX: number, toY: number) {
+    const line = new Phaser.Geom.Line(fromX, fromY, toX, toY);
+    const groundRect = new Phaser.Geom.Rectangle(0, GROUND_TOP_Y, this.levelDef.worldWidth, GAME_HEIGHT - GROUND_TOP_Y);
+
+    if (Phaser.Geom.Intersects.LineToRectangle(line, groundRect)) {
+      return true;
+    }
+
+    let blocked = false;
+    this.platforms.children.each((child) => {
+      const platform = child as Phaser.Types.Physics.Arcade.SpriteWithStaticBody;
+      const body = platform.body;
+      const rect = new Phaser.Geom.Rectangle(body.x, body.y, body.width, body.height);
+
+      if (Phaser.Geom.Intersects.LineToRectangle(line, rect)) {
+        blocked = true;
+        return false;
+      }
+
+      return true;
+    });
+
+    return blocked;
   }
 
   // ─── Soldiers ────────────────────────────────────────────────────────────────
@@ -951,6 +1005,7 @@ export class SteelCommandoScene extends Phaser.Scene {
     sprite.body.setSize(BOSS_W - 10, 70);
     sprite.setDepth(4);
     this.physics.add.collider(sprite, this.ground);
+    this.physics.add.collider(sprite, this.platforms, undefined, this.entityCanLandOnPlatform, this);
 
     // HP bar (fixed to camera)
     const hpBarBg = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 20, 300, 14, 0x111111, 0.9)
@@ -1073,8 +1128,12 @@ export class SteelCommandoScene extends Phaser.Scene {
 
     for (const offset of spreadAngles) {
       const a = baseAngle + offset;
-      // Spawn bullet 50px outside boss center to avoid point-blank instant kill
-      this.spawnEnemyBullet(bx + Math.cos(a) * 50, by + Math.sin(a) * 50, Math.cos(a) * speed, Math.sin(a) * speed);
+      // Do not spawn bullets through terrain when the muzzle is flush with a platform edge.
+      const spawnX = bx + Math.cos(a) * 50;
+      const spawnY = by + Math.sin(a) * 50;
+      if (this.isTerrainBlockingShot(bx, by, spawnX, spawnY)) continue;
+
+      this.spawnEnemyBullet(spawnX, spawnY, Math.cos(a) * speed, Math.sin(a) * speed);
     }
   }
 
@@ -1146,6 +1205,9 @@ export class SteelCommandoScene extends Phaser.Scene {
     this.dead = true;
     this.lives -= 1;
     this.refreshLives();
+    if (this.lives > 0) {
+      this.saveProgress();
+    }
 
     this.player.play("sc-dead");
     this.player.setVelocity(0, -200);
@@ -1172,6 +1234,7 @@ export class SteelCommandoScene extends Phaser.Scene {
     this.player.body.setSize(20, 44);
     this.player.body.setOffset(6, 4);
     this.isCrouching = false;
+    this.jumpsUsed = 0;
   }
 
   // ─── Boss defeat ─────────────────────────────────────────────────────────────
@@ -1242,6 +1305,7 @@ export class SteelCommandoScene extends Phaser.Scene {
   private showGameOver() {
     this.gameOver = true;
     this.physics.pause();
+    clearSteelCommandoProgress();
     this.showOverlay("GAME OVER", `SCORE ${String(this.score).padStart(6, "0")}`, 0xff3344);
   }
 
@@ -1249,6 +1313,15 @@ export class SteelCommandoScene extends Phaser.Scene {
     this.levelComplete = true;
     this.physics.pause();
     const isLast = this.currentLevel >= LEVEL_DEFS.length;
+    if (isLast) {
+      clearSteelCommandoProgress();
+    } else {
+      saveSteelCommandoProgress({
+        level: this.currentLevel + 1,
+        lives: this.lives,
+        score: this.score,
+      });
+    }
     const title = isLast ? "ALL MISSIONS COMPLETE!" : `LEVEL ${this.currentLevel} CLEAR!`;
     const hint = isLast
       ? "Press R or START to restart"
