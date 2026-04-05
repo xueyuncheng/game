@@ -52,7 +52,10 @@ export type SpikeTrapEntry = {
 export type SniperNestEntry = {
   x: number;
   y: number;
+  body: Phaser.GameObjects.Rectangle;
+  canopy: Phaser.GameObjects.Rectangle;
   cooldownMs: number;
+  hp: number;
   activated: boolean;
   nextShotAt: number;
   fireAt: number;

@@ -28,6 +28,7 @@ import {
   SOLDIER_SHOOT_INTERVAL_MIN,
   SOLDIER_SPEED,
   SOLDIER_W,
+  SNIPER_NEST_HP,
   TURRET_ACTIVATE_DIST,
   TURRET_HP,
   TURRET_SHOOT_INTERVAL,
@@ -359,9 +360,9 @@ export class SteelCommandoScene extends Phaser.Scene {
   private createSniperNests() {
     for (const [x, heightOffset, cooldownMs] of this.levelDef.sniperNests) {
       const y = GROUND_TOP_Y - heightOffset;
-      this.add.rectangle(x, y + 28, 32, 8, 0x5b6675, 1).setDepth(2.8);
-      this.add.rectangle(x, y, 18, 26, 0xc6d1de, 1).setDepth(3.2);
-      this.add.rectangle(x + 10, y - 4, 16, 4, 0x1d2430, 1).setDepth(3.2);
+      const platform = this.add.rectangle(x, y + 28, 32, 8, 0x5b6675, 1).setDepth(2.8);
+      const body = this.add.rectangle(x, y, 18, 26, 0xc6d1de, 1).setDepth(3.2);
+      const canopy = this.add.rectangle(x + 10, y - 4, 16, 4, 0x1d2430, 1).setDepth(3.2);
 
       const warningLine = this.add.graphics().setDepth(7).setVisible(false);
       const warningReticle = this.add
@@ -373,7 +374,10 @@ export class SteelCommandoScene extends Phaser.Scene {
       this.sniperNests.push({
         x,
         y,
+        body,
+        canopy,
         cooldownMs,
+        hp: SNIPER_NEST_HP,
         activated: false,
         nextShotAt: this.time.now + Phaser.Math.Between(900, 1700),
         fireAt: 0,
@@ -382,6 +386,8 @@ export class SteelCommandoScene extends Phaser.Scene {
         warningLine,
         warningReticle,
       });
+
+      void platform;
     }
   }
 
@@ -858,6 +864,38 @@ export class SteelCommandoScene extends Phaser.Scene {
     const camRight = this.cameras.main.scrollX + GAME_WIDTH;
 
     for (const nest of this.sniperNests) {
+      if (!nest.body.active) continue;
+
+      this.bullets.children.each((child) => {
+        const bullet = child as Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
+        if (!bullet.active || !nest.body.active) return true;
+
+        const halfW = (bullet.displayWidth + nest.body.displayWidth) / 2;
+        const halfH = (bullet.displayHeight + nest.body.displayHeight) / 2;
+        if (Math.abs(bullet.x - nest.body.x) < halfW && Math.abs(bullet.y - nest.body.y) < halfH) {
+          bullet.disableBody(true, true);
+          this.spawnHit(bullet.x, bullet.y, 0xffee66);
+          nest.hp -= 1;
+
+          if (nest.hp <= 0) {
+            nest.warningLine.destroy();
+            nest.warningReticle.destroy();
+            nest.canopy.destroy();
+            nest.body.destroy();
+            this.spawnExplosion(nest.x, nest.y);
+            this.updateScore(SCORE_PER_TURRET);
+            gamepadManager.vibrate(120, 0.4, 0.7);
+          } else {
+            nest.body.setFillStyle(0xffb3b3, 1);
+            this.time.delayedCall(100, () => nest.body.active && nest.body.setFillStyle(0xc6d1de, 1));
+          }
+        }
+
+        return true;
+      });
+
+      if (!nest.body.active) continue;
+
       if (!nest.activated) {
         if (nest.x < camRight + 260) {
           nest.activated = true;
