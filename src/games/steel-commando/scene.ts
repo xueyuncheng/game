@@ -21,7 +21,6 @@ import {
   PLAYER_H,
   PLAYER_JUMP_VEL,
   PLAYER_SPEED,
-  PLAYER_W,
   SCORE_PER_BOSS,
   SCORE_PER_SOLDIER,
   SHOOT_COOLDOWN_MS,
@@ -319,21 +318,17 @@ export class SteelCommandoScene extends Phaser.Scene {
     // Bullets vs ground/platforms (destroy bullet)
     this.physics.add.collider(this.bullets, this.ground, this.onBulletHitTerrain as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback, undefined, this);
     this.physics.add.collider(this.bullets, this.platforms, this.onBulletHitTerrain as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback, undefined, this);
+    this.physics.add.collider(this.enemyBullets, this.ground, this.onBulletHitTerrain as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback, undefined, this);
+    this.physics.add.collider(this.enemyBullets, this.platforms, this.onBulletHitTerrain as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback, undefined, this);
   }
 
-  private playerCanLandOnPlatform(
-    playerObj: ArcadeTarget,
-    _platformObj: ArcadeTarget,
-  ): boolean {
+  private playerCanLandOnPlatform(playerObj: ArcadeTarget): boolean {
     const p = playerObj as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
     // Only land if falling downward (not jumping through)
     return p.body.velocity.y >= 0;
   }
 
-  private entityCanLandOnPlatform(
-    _entityObj: ArcadeTarget,
-    _platformObj: ArcadeTarget,
-  ): boolean {
+  private entityCanLandOnPlatform(): boolean {
     return true;
   }
 
@@ -777,7 +772,7 @@ export class SteelCommandoScene extends Phaser.Scene {
     }
   }
 
-  private onBulletHitBoss(bulletObj: ArcadeTarget, _bossObj: ArcadeTarget) {
+  private onBulletHitBoss(bulletObj: ArcadeTarget) {
     if (!this.boss || this.boss.defeated) return;
 
     const bullet = bulletObj as Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
@@ -805,7 +800,7 @@ export class SteelCommandoScene extends Phaser.Scene {
     }
   }
 
-  private onEnemyBulletHitPlayer(bulletObj: ArcadeTarget, _playerObj: ArcadeTarget) {
+  private onEnemyBulletHitPlayer(bulletObj: ArcadeTarget) {
     const bullet = bulletObj as Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
 
     if (this.time.now < this.invincibleUntil) return;
@@ -824,7 +819,7 @@ export class SteelCommandoScene extends Phaser.Scene {
     this.cameras.main.flash(120, 255, 220, 100, false);
   }
 
-  private onBulletHitTerrain(bulletObj: ArcadeTarget, _terrainObj: ArcadeTarget) {
+  private onBulletHitTerrain(bulletObj: ArcadeTarget) {
     const bullet = bulletObj as Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
     this.spawnHit(bullet.x, bullet.y, 0xaabbcc);
     bullet.disableBody(true, true);

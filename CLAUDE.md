@@ -5,9 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev      # Start dev server at localhost:3000
-npm run build    # Production build (static export)
-npm run lint     # ESLint checks
+pnpm dev      # Start dev server at localhost:3000
+pnpm build    # Production build (static export)
+pnpm lint     # ESLint checks
 ```
 
 No test runner is configured.
