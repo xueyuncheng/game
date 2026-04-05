@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ControlHint } from "@/components/control-hint";
 import { GameCanvas } from "@/components/game-canvas";
+import { GameProgressControls } from "@/components/game-progress-controls";
 import { GameShell } from "@/components/game-shell";
 import { GamepadStatus } from "@/components/gamepad-status";
 import { games, getGameBySlug } from "@/data/games";
@@ -42,6 +43,7 @@ export default async function PlayPage({ params }: PlayPageProps) {
           <GameCanvas slug={game.slug} />
           <div className="space-y-6">
             <GamepadStatus />
+            <GameProgressControls slug={game.slug} />
             <ControlHint slug={game.slug} />
           </div>
         </div>
